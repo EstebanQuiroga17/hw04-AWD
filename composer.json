@@ -1,6 +1,9 @@
 {
+    "name": "esteban/hw04-app",
+    "description": "HW04 PHP and MongoDB",
+    "license": "proprietary",
     "require": {
         "php": "^8.0",
-        "mongodb/mongodb": "1.15"
+        "mongodb/mongodb": "*"
     }
 }

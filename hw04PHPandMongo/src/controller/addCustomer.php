@@ -5,10 +5,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id = htmlspecialchars($_POST['id'] ?? '');
     $name = htmlspecialchars($_POST['name'] ?? '');
     $password = $_POST['password'] ?? '';
+    $URI = getenv('MONGODB_URI');
 
     if (!empty($id) && !empty($name) && !empty($password)) {
         try {
-            $client = new MongoDB\Client('mongodb+srv://oop:oop@cluster0.9knxc.mongodb.net/?appName=Cluster0');
+            $client = new MongoDB\Client($URI);
             
             $db = $client->students;
             $collection = $db->Customer;

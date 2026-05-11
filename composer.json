@@ -1,9 +1,11 @@
 {
-    "name": "esteban/hw04-app",
-    "description": "HW04 PHP and MongoDB",
-    "license": "proprietary",
     "require": {
-        "php": "^8.0",
-        "mongodb/mongodb": "*"
+        "illuminate/database": "^9.0",
+        "ramsey/uuid": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Models\\": "models/"
+        }
     }
 }

@@ -1,2 +1,20 @@
-utils
-vendor
+/vendor/
+proyecto.zip
+test.php
+
+# Entornos y configuraciones
+.env
+.env.local
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Configuración de editores/IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

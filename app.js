@@ -1,5 +1,5 @@
 
-const API_URL = 'api.php';
+const API_URL = './api.php';
 
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
@@ -23,17 +23,31 @@ function showAlert(message, type = 'success') {
 async function loadData() {
     try {
         const response = await fetch(`${API_URL}?action=get_all`);
-        const data = await response.json();
-        
+        const text = await response.text();
+
+        if (!response.ok) {
+            console.error('API error response:', response.status, response.statusText, text);
+            showAlert(`Error del servidor: ${response.status} ${response.statusText}`, 'danger');
+            return;
+        }
+
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseError) {
+            console.error('Invalid JSON received from API:', text);
+            showAlert('Respuesta inválida del servidor. Revisa la consola para más detalles.', 'danger');
+            return;
+        }
+
         if (data.success) {
             renderBanks(data.banks);
-            populateBankSelect(data.banks);
         } else {
             showAlert(data.message || data.error, 'danger');
         }
     } catch (error) {
-        console.error('Error cargando datos. ¿Está PHP corriendo en localhost:8000?', error);
-        showAlert('No se pudo conectar al servidor PHP. ¿Aseguraste de ejecutar "php -S localhost:8000"?', 'danger');
+        console.error('Error cargando datos desde API:', error);
+        showAlert('No se pudo conectar al servidor PHP. Revisa la configuración y logs.', 'danger');
     }
 }
 
@@ -63,52 +77,83 @@ function renderBanks(banks) {
 
 async function createBank(e) {
     e.preventDefault();
-    const id = document.getElementById('id').value;
     const name = document.getElementById('name').value;
     const country = document.getElementById('country').value;
     const clients = document.getElementById('clients').value;
     const owner = document.getElementById('owner').value;
     const phoneNumber = document.getElementById('phoneNumber').value;
     const dollarValue = document.getElementById('dollarValue').value;
-    
+    const creationDate = document.getElementById('creationDate').value;
 
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'create_bank', name, email })
+            body: JSON.stringify({
+                action: 'create_bank',
+                name,
+                country,
+                clients,
+                owner,
+                phoneNumber,
+                dollarValue,
+                creationDate
+            })
         });
-        const data = await response.json();
-        
+
+        const text = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(text);
+        } catch (parseError) {
+            console.error('Invalid JSON received from createBank:', text);
+            showAlert('Respuesta inválida del servidor al crear banco.', 'danger');
+            return;
+        }
+
         if (data.success) {
-            showAlert('Usuario registrado correctamente');
-            document.getElementById('formUser').reset();
+            showAlert('Banco registrado correctamente');
+            document.getElementById('formBank').reset();
             loadData();
         } else {
-            showAlert('Error: ' + (data.error || 'No se pudo crear'), 'danger');
+            showAlert('Error: ' + (data.error || 'No se pudo crear el banco'), 'danger');
         }
     } catch (error) {
-        showAlert('Error de conexión', 'danger');
+        console.error('Error de conexión al crear banco:', error);
+        showAlert('Error de conexión al crear banco', 'danger');
     }
 }
 
 
 window.deleteBank = async function(id) {
-    if(!confirm('¿Estás seguro de eliminar este usuario? Sus posts también se eliminarán.')) return;
-    
+    if (!confirm('¿Estás seguro de eliminar este banco?')) return;
+
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'delete_user', id })
+            body: JSON.stringify({ action: 'delete_bank', id })
         });
-        const data = await response.json();
-        
+
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseError) {
+            console.error('Invalid JSON received from deleteBank:', text);
+            showAlert('Respuesta inválida del servidor al eliminar banco.', 'danger');
+            return;
+        }
+
         if (data.success) {
-            showAlert('Usuario eliminado');
+            showAlert('Banco eliminado');
             loadData();
+        } else {
+            showAlert('Error al eliminar: ' + (data.error || 'No se pudo eliminar el banco'), 'danger');
         }
     } catch (error) {
+        console.error('Error de conexión al eliminar banco:', error);
         showAlert('Error de conexión', 'danger');
     }
 }

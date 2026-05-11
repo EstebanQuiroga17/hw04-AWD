@@ -86,11 +86,10 @@ async function createBank(e) {
     const creationDate = document.getElementById('creationDate').value;
 
     try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(`${API_URL}?action=create_bank`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'create_bank',
                 name,
                 country,
                 clients,
@@ -130,10 +129,10 @@ window.deleteBank = async function(id) {
     if (!confirm('¿Estás seguro de eliminar este banco?')) return;
 
     try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(`${API_URL}?action=delete_bank`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'delete_bank', id })
+            body: JSON.stringify({ id })
         });
 
         const text = await response.text();

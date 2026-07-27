@@ -20,7 +20,7 @@ function App() {
   const [expProduct, setExpProduct] = useState({ name: '', day: '', month: '', year: '' });
   const [daysLeft, setDaysLeft] = useState(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = 'https://backexam3-acgugscxetgpeyfz.eastus-01.azurewebsites.net';
 
   const handleProductChange = (index, field, value) => {
     const newProducts = [...products];
@@ -38,13 +38,9 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setTotal(data.total);
-      } else {
-        throw new Error("Backend not connected");
       }
     } catch (e) {
-      // Fallback calculation if backend is not running
-      const sum = products.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0);
-      setTotal(sum);
+      console.error("Error computing total:", e);
     }
   };
 
@@ -58,12 +54,9 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setIvaResult(data.iva);
-      } else {
-        throw new Error("Backend not connected");
       }
     } catch (e) {
-      // Fallback calculation
-      setIvaResult((parseFloat(ivaProduct.price) || 0) * 0.15); // Assuming 15% IVA
+      console.error("Error computing IVA:", e);
     }
   };
 
@@ -81,17 +74,9 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setDaysLeft(data.daysLeft);
-      } else {
-        throw new Error("Backend not connected");
       }
     } catch (e) {
-      // Fallback calculation
-      const today = new Date();
-      // month is 0-indexed in JS Date
-      const expDate = new Date(parseInt(expProduct.year), parseInt(expProduct.month) - 1, parseInt(expProduct.day));
-      const diffTime = expDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      setDaysLeft(diffDays);
+      console.error("Error computing expiration time:", e);
     }
   };
 

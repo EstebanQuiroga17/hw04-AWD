@@ -1,39 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  // Feature 1 State
-  const [products, setProducts] = useState([
-    { id: 1, name: '', price: '' },
-    { id: 2, name: '', price: '' },
-    { id: 3, name: '', price: '' },
-    { id: 4, name: '', price: '' },
-    { id: 5, name: '', price: '' },
-  ]);
+  const [availableProducts, setAvailableProducts] = useState([]);
+  
+  const [selectedProductIds, setSelectedProductIds] = useState(['', '', '', '', '']);
   const [total, setTotal] = useState(null);
 
-  // Feature 2 State
-  const [ivaProduct, setIvaProduct] = useState({ name: '', price: '' });
+  const [selectedIvaProductId, setSelectedIvaProductId] = useState('');
   const [ivaResult, setIvaResult] = useState(null);
 
-  // Feature 3 State
-  const [expProduct, setExpProduct] = useState({ name: '', day: '', month: '', year: '' });
+  const [selectedExpProductId, setSelectedExpProductId] = useState('');
   const [daysLeft, setDaysLeft] = useState(null);
 
-  const API_URL = 'https://backexam3-acgugscxetgpeyfz.eastus-01.azurewebsites.net';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://backexam3-acgugscxetgpeyfz.eastus-01.azurewebsites.net';
 
-  const handleProductChange = (index, field, value) => {
-    const newProducts = [...products];
-    newProducts[index][field] = value;
-    setProducts(newProducts);
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/products`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableProducts(data);
+      }
+    } catch (e) {
+      console.error("Error fetching products:", e);
+    }
+  };
+
+  const handleSelectProduct = (index, productId) => {
+    const updated = [...selectedProductIds];
+    updated[index] = productId;
+    setSelectedProductIds(updated);
   };
 
   const computeTotal = async () => {
     try {
+      const productsToSubmit = selectedProductIds
+        .map(id => availableProducts.find(p => p._id === id || p.id === id))
+        .filter(Boolean);
+
       const response = await fetch(`${API_URL}/api/total`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ products: products.map(p => ({ ...p, price: parseFloat(p.price) || 0 })) })
+        body: JSON.stringify({ products: productsToSubmit })
       });
       if (response.ok) {
         const data = await response.json();
@@ -46,10 +59,13 @@ function App() {
 
   const computeIVA = async () => {
     try {
+      const selectedProd = availableProducts.find(p => p._id === selectedIvaProductId || p.id === selectedIvaProductId);
+      if (!selectedProd) return;
+
       const response = await fetch(`${API_URL}/api/iva`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ price: parseFloat(ivaProduct.price) || 0 })
+        body: JSON.stringify({ name: selectedProd.name, price: selectedProd.price })
       });
       if (response.ok) {
         const data = await response.json();
@@ -62,13 +78,17 @@ function App() {
 
   const computeExpiration = async () => {
     try {
+      const selectedProd = availableProducts.find(p => p._id === selectedExpProductId || p.id === selectedExpProductId);
+      if (!selectedProd) return;
+
       const response = await fetch(`${API_URL}/api/expiration`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          day: parseInt(expProduct.day),
-          month: parseInt(expProduct.month),
-          year: parseInt(expProduct.year)
+          name: selectedProd.name,
+          day: selectedProd.day,
+          month: selectedProd.month,
+          year: selectedProd.year
         })
       });
       if (response.ok) {
@@ -80,6 +100,9 @@ function App() {
     }
   };
 
+  const selectedIvaProduct = availableProducts.find(p => p._id === selectedIvaProductId || p.id === selectedIvaProductId);
+  const selectedExpProduct = availableProducts.find(p => p._id === selectedExpProductId || p.id === selectedExpProductId);
+
   return (
     <div className="app-container">
       <header className="header">
@@ -88,31 +111,38 @@ function App() {
       </header>
 
       <main className="grid-container">
-        {/* Feature 1: Shopping Cart Total */}
         <section className="card feature-card">
           <div className="card-header">
             <h2>🛒 Compute Total</h2>
-            <p>Add 5 products to calculate the total price.</p>
+            <p>Select 5 products to calculate the total price.</p>
           </div>
           <div className="card-body">
-            {products.map((product, index) => (
-              <div key={product.id} className="input-group">
-                <input
-                  type="text"
-                  placeholder={`Product ${index + 1} Name`}
-                  value={product.name}
-                  onChange={(e) => handleProductChange(index, 'name', e.target.value)}
-                  className="input-field"
-                />
-                <input
-                  type="number"
-                  placeholder="Price"
-                  value={product.price}
-                  onChange={(e) => handleProductChange(index, 'price', e.target.value)}
-                  className="input-field"
-                />
-              </div>
-            ))}
+            {selectedProductIds.map((selectedId, index) => {
+              const matchedProduct = availableProducts.find(p => p._id === selectedId || p.id === selectedId);
+              return (
+                <div key={index} className="input-group">
+                  <select
+                    value={selectedId}
+                    onChange={(e) => handleSelectProduct(index, e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="">-- Select Product {index + 1} --</option>
+                    {availableProducts.map(p => (
+                      <option key={p._id || p.id} value={p._id || p.id}>
+                        {p.name} (${p.price})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Price"
+                    value={matchedProduct ? `$${matchedProduct.price}` : ''}
+                    disabled
+                    className="input-field"
+                  />
+                </div>
+              );
+            })}
             <button className="primary-btn" onClick={computeTotal}>Calculate Total</button>
             {total !== null && (
               <div className="result-box">
@@ -123,26 +153,30 @@ function App() {
           </div>
         </section>
 
-        {/* Feature 2: Compute IVA */}
         <section className="card feature-card">
           <div className="card-header">
             <h2>🧾 Compute IVA</h2>
-            <p>Calculate the IVA (15%) for a single product.</p>
+            <p>Select a product to calculate its IVA (15%).</p>
           </div>
           <div className="card-body">
             <div className="input-group">
+              <select
+                value={selectedIvaProductId}
+                onChange={(e) => setSelectedIvaProductId(e.target.value)}
+                className="input-field"
+              >
+                <option value="">-- Select Product --</option>
+                {availableProducts.map(p => (
+                  <option key={p._id || p.id} value={p._id || p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
               <input
                 type="text"
-                placeholder="Product Name"
-                value={ivaProduct.name}
-                onChange={(e) => setIvaProduct({ ...ivaProduct, name: e.target.value })}
-                className="input-field"
-              />
-              <input
-                type="number"
                 placeholder="Price"
-                value={ivaProduct.price}
-                onChange={(e) => setIvaProduct({ ...ivaProduct, price: e.target.value })}
+                value={selectedIvaProduct ? `$${selectedIvaProduct.price}` : ''}
+                disabled
                 className="input-field"
               />
             </div>
@@ -156,44 +190,46 @@ function App() {
           </div>
         </section>
 
-        {/* Feature 3: Expiration Time */}
         <section className="card feature-card">
           <div className="card-header">
             <h2>⏳ Expiration Time</h2>
-            <p>Calculate days left based on expiration date.</p>
+            <p>Select a product to calculate days left.</p>
           </div>
           <div className="card-body">
             <div className="input-group">
-              <input
-                type="text"
-                placeholder="Product Name"
-                value={expProduct.name}
-                onChange={(e) => setExpProduct({ ...expProduct, name: e.target.value })}
+              <select
+                value={selectedExpProductId}
+                onChange={(e) => setSelectedExpProductId(e.target.value)}
                 className="input-field full-width"
-              />
+              >
+                <option value="">-- Select Product --</option>
+                {availableProducts.map(p => (
+                  <option key={p._id || p.id} value={p._id || p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="input-group date-inputs">
               <input
-                type="number"
+                type="text"
                 placeholder="DD"
-                min="1" max="31"
-                value={expProduct.day}
-                onChange={(e) => setExpProduct({ ...expProduct, day: e.target.value })}
+                value={selectedExpProduct ? selectedExpProduct.day : ''}
+                disabled
                 className="input-field"
               />
               <input
-                type="number"
+                type="text"
                 placeholder="MM"
-                min="1" max="12"
-                value={expProduct.month}
-                onChange={(e) => setExpProduct({ ...expProduct, month: e.target.value })}
+                value={selectedExpProduct ? selectedExpProduct.month : ''}
+                disabled
                 className="input-field"
               />
               <input
-                type="number"
+                type="text"
                 placeholder="YYYY"
-                value={expProduct.year}
-                onChange={(e) => setExpProduct({ ...expProduct, year: e.target.value })}
+                value={selectedExpProduct ? selectedExpProduct.year : ''}
+                disabled
                 className="input-field"
               />
             </div>

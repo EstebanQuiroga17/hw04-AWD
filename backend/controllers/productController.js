@@ -1,14 +1,19 @@
 const productService = require('../services/productService');
 
-const computeTotal = (req, res) => {
+const getProducts = async (req, res) => {
+    try {
+        const products = await productService.getAllProducts();
+        res.json(products);
+    } catch (error) {
+        console.error("Error fetching products:", error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+const computeTotal = async (req, res) => {
     try {
         const { products } = req.body;
-        
-        if (!products || !Array.isArray(products)) {
-            return res.status(400).json({ error: 'A products array is required' });
-        }
-
-        const total = productService.calculateTotal(products);
+        const total = await productService.calculateTotal(products);
         res.json({ total });
     } catch (error) {
         console.error("Error computing total:", error);
@@ -16,15 +21,13 @@ const computeTotal = (req, res) => {
     }
 };
 
-const computeIVA = (req, res) => {
+const computeIVA = async (req, res) => {
     try {
-        const { price } = req.body;
-        
-        if (price === undefined || isNaN(price)) {
-            return res.status(400).json({ error: 'A valid price is required' });
+        const { name, price } = req.body;
+        const iva = await productService.calculateIVA(name, price);
+        if (iva === null) {
+            return res.status(400).json({ error: 'Valid price or existing product name is required' });
         }
-
-        const iva = productService.calculateIVA(price);
         res.json({ iva });
     } catch (error) {
         console.error("Error computing IVA:", error);
@@ -32,15 +35,13 @@ const computeIVA = (req, res) => {
     }
 };
 
-const computeExpiration = (req, res) => {
+const computeExpiration = async (req, res) => {
     try {
-        const { day, month, year } = req.body;
-
-        if (!day || !month || !year) {
-            return res.status(400).json({ error: 'Day, month, and year are required' });
+        const { name, day, month, year } = req.body;
+        const daysLeft = await productService.calculateDaysLeft(name, day, month, year);
+        if (daysLeft === null) {
+            return res.status(400).json({ error: 'Valid expiration date or existing product name is required' });
         }
-
-        const daysLeft = productService.calculateDaysLeft(day, month, year);
         res.json({ daysLeft });
     } catch (error) {
         console.error("Error computing expiration time:", error);
@@ -49,6 +50,7 @@ const computeExpiration = (req, res) => {
 };
 
 module.exports = {
+    getProducts,
     computeTotal,
     computeIVA,
     computeExpiration

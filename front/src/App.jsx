@@ -13,7 +13,7 @@ function App() {
   const [selectedExpProductId, setSelectedExpProductId] = useState('');
   const [daysLeft, setDaysLeft] = useState(null);
 
-  const API_URL = 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://backexam3-acgugscxetgpeyfz.eastus-01.azurewebsites.net';
 
   useEffect(() => {
     fetchProducts();
